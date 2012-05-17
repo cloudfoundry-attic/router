@@ -6,27 +6,24 @@ describe 'Router Integration Tests (require nginx running)' do
   include Integration
 
   before :each do
-    @nats_server = NatsServer.new
-    @nats_server.start_server
-    @nats_server.is_running?.should be_true
+    nats_dir = Dir.mktmpdir('router-test-nats')
+    nats_pid = File.join(nats_dir, 'nats-server.pid')
+    nats_port = VCAP::grab_ephemeral_port
+    @nats_server = NatsServer.new(nats_pid, nats_port, nats_dir)
+    @nats_server.start
 
-    @router = RouterServer.new(@nats_server.uri)
-    # The router will only announce itself after it has subscribed to 'vcap.component.discover'.
-    NATS.start(:uri => @nats_server.uri) do
-      NATS.subscribe('vcap.component.announce') { NATS.stop }
-      # Ensure that NATS has processed our subscribe from above before we start the router
-      NATS.publish('xxx') { @router.start_server }
-      EM.add_timer(5) { NATS.stop }
-    end
-    @router.is_running?.should be_true
+    router_dir = Dir.mktmpdir('router-test-router')
+    @router_server = RouterServer.new(@nats_server.uri, router_dir)
+    @router_server.start
+    @router_server.is_running?.should be_true
   end
 
   after :each do
-    @router.kill_server
-    @router.is_running?.should be_false
+    @router_server.stop
+    @router_server.is_running?.should be_false
 
-    @nats_server.kill_server
-    @nats_server.is_running?.should be_false
+    @nats_server.stop
+    @nats_server.ready?.should be_false
   end
 
   it 'should get health status via nginx' do
@@ -39,7 +36,7 @@ describe 'Router Integration Tests (require nginx running)' do
     app = TestApp.new('router_test.vcap.me')
     dea = DummyDea.new(@nats_server.uri, '1234')
     dea.register_app(app)
-    app.verify_registered('127.0.0.1', RouterServer.port)
+    app.verify_registered(RouterServer.host, RouterServer.port)
     app.stop
   end
 
@@ -48,12 +45,12 @@ describe 'Router Integration Tests (require nginx running)' do
     app = TestApp.new('router_test.vcap.me')
     dea = DummyDea.new(@nats_server.uri, '1234')
     dea.register_app(app)
-    app.verify_registered('127.0.0.1', RouterServer.port)
+    app.verify_registered(RouterServer.host, RouterServer.port)
     dea.unregister_app(app)
     # We should be unregistered here..
     # Send out simple request and check request and response
     req = simple_http_request('router_test.cap.me', '/')
-    verify_vcap_404(req, '127.0.0.1', RouterServer.port)
+    verify_vcap_404(req, RouterServer.host, RouterServer.port)
     app.stop
   end
 
@@ -72,7 +69,7 @@ describe 'Router Integration Tests (require nginx running)' do
     req = simple_http_request('lb_test.vcap.me', '/')
     app_sockets = apps.collect { |a| a.socket }
 
-    results = send_requests_to_apps("127.0.0.1", RouterServer.port,
+    results = send_requests_to_apps(RouterServer.host, RouterServer.port,
                                     req, num_requests, app_sockets,
                                     FOO_HTTP_RESPONSE)
     results.should have(num_apps).items
@@ -108,7 +105,7 @@ describe 'Router Integration Tests (require nginx running)' do
     req = simple_http_request('lb_test.vcap.me', '/')
     app_sockets = apps.collect { |a| a.socket }
 
-    results = send_requests_to_apps("127.0.0.1", RouterServer.port,
+    results = send_requests_to_apps(RouterServer.host, RouterServer.port,
                                     req, num_requests, app_sockets,
                                     FOO_HTTP_RESPONSE)
     # Verify all apps get request and the totally number is correct
@@ -177,7 +174,7 @@ describe 'Router Integration Tests (require nginx running)' do
     vcap_id = app_socket = nil
     app_sockets = apps.collect { |a| a.socket }
 
-    TCPSocket.open('127.0.0.1', RouterServer.port) do |rs|
+    TCPSocket.open(RouterServer.host, RouterServer.port) do |rs|
       rs.send(STICKY_REQUEST, 0)
       ready = IO.select(app_sockets, nil, nil, 1)
       ready[0].should have(1).items
@@ -199,7 +196,7 @@ describe 'Router Integration Tests (require nginx running)' do
     cookie = "__VCAP_ID__=#{vcap_id}"
     sticky_request = simple_sticky_request('sticky.vcap.me', '/sticky', cookie)
 
-    results = send_requests_to_apps("127.0.0.1", RouterServer.port,
+    results = send_requests_to_apps(RouterServer.host, RouterServer.port,
                                     sticky_request, num_requests, app_sockets,
                                     FOO_HTTP_RESPONSE)
     verify_results(results, app_socket, num_requests)
@@ -209,7 +206,7 @@ describe 'Router Integration Tests (require nginx running)' do
     bad_cookie = "__VCAP_ID__=bad_cookie"
     sticky_request = simple_sticky_request('sticky.vcap.me', '/sticky', bad_cookie)
 
-    results = send_requests_to_apps("127.0.0.1", RouterServer.port,
+    results = send_requests_to_apps(RouterServer.host, RouterServer.port,
                                     sticky_request, num_requests, app_sockets,
                                     FOO_HTTP_RESPONSE)
     verify_results_by_request(results, num_requests)
@@ -220,7 +217,7 @@ describe 'Router Integration Tests (require nginx running)' do
     down_dea_cookie = "__VCAP_ID__=#{Router.generate_session_cookie(droplet)}"
     sticky_request = simple_sticky_request('sticky.vcap.me', '/sticky', bad_cookie)
 
-    results = send_requests_to_apps("127.0.0.1", RouterServer.port,
+    results = send_requests_to_apps(RouterServer.host, RouterServer.port,
                                     sticky_request, num_requests, app_sockets,
                                     FOO_HTTP_RESPONSE)
 
@@ -230,8 +227,11 @@ describe 'Router Integration Tests (require nginx running)' do
       dea.unregister_app(app)
     end
 
+    # sleep to make sure unregister apps are all done
+    sleep 0.2
+
     # Check that it is gone
-    verify_vcap_404(STICKY_REQUEST, '127.0.0.1', RouterServer.port)
+    verify_vcap_404(STICKY_REQUEST, RouterServer.host, RouterServer.port)
 
     apps.each {|a| a.stop }
   end
@@ -241,7 +241,7 @@ describe 'Router Integration Tests (require nginx running)' do
     dea = DummyDea.new(@nats_server.uri, '1234')
     dea.register_app(app, {"component" => "trace", "runtime" => "ruby"})
 
-    resp = app.get_trace_header("127.0.0.1", RouterServer.port, TRACE_KEY)
+    resp = app.get_trace_header(RouterServer.host, RouterServer.port, TRACE_KEY)
 
     resp.headers["X-Vcap-Backend"].should_not be_nil
     h, p = resp.headers["X-Vcap-Backend"].split(":")
@@ -260,7 +260,7 @@ describe 'Router Integration Tests (require nginx running)' do
     dea = DummyDea.new(@nats_server.uri, '1234')
     dea.register_app(app, {"component" => "trace", "runtime" => "ruby"})
 
-    resp = app.get_trace_header("127.0.0.1", RouterServer.port, "fake_trace_key")
+    resp = app.get_trace_header(RouterServer.host, RouterServer.port, "fake_trace_key")
 
     resp.headers["X-Vcap-Backend"].should be_nil
     resp.headers["X-Vcap-Router"].should be_nil
