@@ -1,19 +1,19 @@
 GIT
-  remote: git://github.com/cloudfoundry/common.git
-  revision: b96ec1192d961925d91e17ca3831f8547489d918
+  remote: https://github.com/cloudfoundry/common.git
+  revision: 309a39e1ff876efec3ec568fcc7e902d857f8107
   specs:
     vcap_logging (1.0.2)
       rake
 
 GIT
-  remote: git://github.com/cloudfoundry/eventmachine.git
+  remote: https://github.com/cloudfoundry/eventmachine.git
   revision: 2806c630d8631d5dcf9fb2555f665b829052aabe
   branch: release-0.12.11-cf
   specs:
     eventmachine (0.12.11.cloudfoundry.3)
 
 GIT
-  remote: git://github.com/cloudfoundry/vcap-common.git
+  remote: https://github.com/cloudfoundry/vcap-common.git
   revision: c91898e1d74f23446d1d7fe2382df6ace071c0ad
   ref: c91898e1
   specs:
