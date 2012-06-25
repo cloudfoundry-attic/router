@@ -33,8 +33,9 @@ class RouterServer < VCAP::Spec::ForkedComponent::Base
 
     mbus = "mbus: #{nats_uri}"
     log_info = "logging:\n  level: debug\n  file: #{logfile}"
+    enable_nonprod = "enable_nonprod_apps: true\nflush_apps_interval: 2\n"
 
-    config = %Q{sock: #{UNIX_SOCK}\n#{mbus}\n#{log_info}\npid: #{pidfile}\nlocal_route: 127.0.0.1\nstatus:\n  port: #{STATUS_PORT}\n  user: #{STATUS_USER}\n  password: #{STATUS_PASSWD}}
+    config = %Q{sock: #{UNIX_SOCK}\n#{mbus}\n#{log_info}\n#{enable_nonprod}\npid: #{pidfile}\nlocal_route: 127.0.0.1\nstatus:\n  port: #{STATUS_PORT}\n  user: #{STATUS_USER}\n  password: #{STATUS_PASSWD}}
 
     # Write the config
     File.open(config_file, 'w') { |f| f.puts "#{config}" }
