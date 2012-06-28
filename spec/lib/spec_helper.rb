@@ -31,11 +31,21 @@ class RouterServer < VCAP::Spec::ForkedComponent::Base
     logfile = File.join(dir, 'router.log')
     config_file = File.join(dir, 'router.yml')
 
-    mbus = "mbus: #{nats_uri}"
-    log_info = "logging:\n  level: debug\n  file: #{logfile}"
-    enable_nonprod = "enable_nonprod_apps: true\nflush_apps_interval: 2\n"
-
-    config = %Q{sock: #{UNIX_SOCK}\n#{mbus}\n#{log_info}\n#{enable_nonprod}\npid: #{pidfile}\nlocal_route: 127.0.0.1\nstatus:\n  port: #{STATUS_PORT}\n  user: #{STATUS_USER}\n  password: #{STATUS_PASSWD}}
+    config = <<-EOF
+sock: #{UNIX_SOCK}
+mbus: #{nats_uri}
+logging:
+  level: debug
+  file: #{logfile}
+enable_nonprod_apps: true
+flush_apps_interval: 2
+pid: #{pidfile}
+local_route: 127.0.0.1
+status:
+  port: #{STATUS_PORT}
+  user: #{STATUS_USER}
+  password: #{STATUS_PASSWD}
+EOF
 
     # Write the config
     File.open(config_file, 'w') { |f| f.puts "#{config}" }
