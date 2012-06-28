@@ -88,15 +88,19 @@ describe 'Router Functional Tests' do
     app1.verify_registered
     app2.verify_registered
     original_apps_set = Set.new([app1.id, app2.id])
+    received_apps_set = nil
 
     NATS.start(:uri => @nats_server.uri) do
       NATS.subscribe('router.active_apps') do |msg|
         apps_list = Yajl::Parser.parse(Zlib::Inflate.inflate(msg))
-        apps_set = Set.new(apps_list)
-        apps_set.should == original_apps_set
+        received_apps_set = Set.new(apps_list)
         NATS.stop
       end
+
+      EM.add_timer(5) { NATS.stop } # 5 secs timeout
     end
+
+    original_apps_set.should == received_apps_set
   end
 
   it 'should generate the same token as router v1 did' do
