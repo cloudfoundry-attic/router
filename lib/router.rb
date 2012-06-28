@@ -4,6 +4,8 @@ require 'optparse'
 require 'socket'
 require 'yaml'
 require 'openssl'
+require 'set'
+require 'zlib'
 
 require 'rubygems'
 require 'bundler/setup'
