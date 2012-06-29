@@ -39,6 +39,7 @@ class Router
       if @enable_nonprod_apps
         @flush_apps_interval = config['flush_apps_interval'] || 30
         @active_apps = Set.new
+        @flushing_apps = Set.new
       end
     end
 
@@ -234,13 +235,17 @@ class Router
     def flush_active_apps
       return unless @enable_nonprod_apps
 
-      msg = Yajl::Encoder.encode(@active_apps.to_a)
-      zmsg = Zlib::Deflate.deflate(msg)
-
-      log.info("Flushing active apps, app size: #{@active_apps.size}, msg size: #{zmsg.size}")
-      NATS.publish('router.active_apps', zmsg)
-
+      @active_apps, @flushing_apps = @flushing_apps, @active_apps
       @active_apps.clear
+
+      EM.defer do
+        msg = Yajl::Encoder.encode(@flushing_apps.to_a)
+        zmsg = Zlib::Deflate.deflate(msg)
+
+        log.info("Flushing active apps, app size: #{@flushing_apps.size}, msg size: #{zmsg.size}")
+        EM.next_tick { NATS.publish('router.active_apps', zmsg) }
+      end
+
     end
   end
 end
