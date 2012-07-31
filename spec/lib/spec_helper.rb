@@ -38,7 +38,7 @@ logging:
   level: debug
   file: #{logfile}
 enable_nonprod_apps: true
-flush_apps_interval: 2
+flush_apps_interval: 1
 pid: #{pidfile}
 local_route: 127.0.0.1
 status:

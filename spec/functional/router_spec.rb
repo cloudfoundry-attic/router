@@ -97,7 +97,7 @@ describe 'Router Functional Tests' do
         NATS.stop
       end
 
-      EM.add_timer(5) { NATS.stop } # 5 secs timeout
+      EM.add_timer(60) { NATS.stop } # 60 secs timeout
     end
 
     original_apps_set.should == received_apps_set
