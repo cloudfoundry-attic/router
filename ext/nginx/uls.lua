@@ -28,6 +28,7 @@ ULS_STATS_LATENCY      = "response_latency"
 ULS_STATS_SAMPLES      = "response_samples"
 ULS_STATS_CODES        = "response_codes"
 ULS_STICKY_SESSION     = "sticky_session"
+ULS_APP_ID             = "app_id"
 -- For both diretion
 -- When ULS_BACKEND_ADDR sent from nginx to uls, it means sticky address
 ULS_BACKEND_ADDR       = "backend_addr"
@@ -67,7 +68,8 @@ ULS_ROUTER_IP          = "router_ip"
   {
     "backend_addr": xxx,
     "request_tags": xxx,
-    "router_ip": xxx
+    "router_ip": xxx,
+    "app_id": xxx,
   }
 --]]
 
@@ -236,6 +238,7 @@ function post_process_subrequest(ngx, res)
   ngx.var.uls_req_tags = msg[ULS_REQEST_TAGS]
   ngx.var.router_ip    = msg[ULS_ROUTER_IP]
   ngx.var.sticky       = msg[ULS_STICKY_SESSION]
+  ngx.var.app_id       = msg[ULS_APP_ID]
 
   ngx.log(ngx.DEBUG, "route "..ngx.var.http_host.." to "..ngx.var.backend_addr)
 end

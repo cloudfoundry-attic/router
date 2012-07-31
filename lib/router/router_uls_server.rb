@@ -55,7 +55,8 @@ class RouterULSServer < Sinatra::Base
         ULS_STICKY_SESSION => new_sticky,
         ULS_BACKEND_ADDR   => "#{droplet[:host]}:#{droplet[:port]}",
         ULS_REQUEST_TAGS   => uls_req_tags,
-        ULS_ROUTER_IP      => Router.inet
+        ULS_ROUTER_IP      => Router.inet,
+        ULS_APP_ID         => droplet[:app] || 0,
       }
     end
 
