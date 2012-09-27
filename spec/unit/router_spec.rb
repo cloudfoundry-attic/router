@@ -36,6 +36,17 @@ describe Router do
       VCAP::Component.varz[:urls].should == 1
     end
 
+    it 'should register a droplet with nil tags' do
+      Router.register_droplet('foo.vcap.me', '10.0.1.22', 2222, nil, 123)
+      VCAP::Component.varz[:droplets].should == 1
+      VCAP::Component.varz[:urls].should == 1
+
+      droplets = Router.lookup_droplet('foo.vcap.me')
+      droplet = droplets.first
+      droplet.should have_key :tags
+      droplet[:tags].should == {}
+    end
+
     it 'should allow proper lookup' do
       Router.register_droplet('foo.vcap.me', '10.0.1.22', 2222, {}, 123)
       droplets = Router.lookup_droplet('foo.vcap.me')
@@ -49,11 +60,13 @@ describe Router do
       droplet.should have_key :host
       droplet.should have_key :port
       droplet.should have_key :clients
+      droplet.should have_key :tags
       droplet[:requests].should == 0
       droplet[:url].should == 'foo.vcap.me'
       droplet[:host].should == '10.0.1.22'
       droplet[:port].should == 2222
       droplet[:clients].should == {}
+      droplet[:tags].should == {}
     end
 
     it 'should allow looking up uppercase uri' do

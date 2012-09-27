@@ -171,6 +171,8 @@ class Router
     def register_droplet(url, host, port, tags, app_id)
       return unless host && port
       url.downcase!
+      tags ||= {}
+
       droplets = @droplets[url] || []
       # Skip the ones we already know about..
       droplets.each { |droplet|
@@ -180,7 +182,7 @@ class Router
           return
         end
       }
-      tags.delete_if { |key, value| key.nil? || value.nil? } if tags
+      tags.delete_if { |key, value| key.nil? || value.nil? }
       droplet = {
         :app => app_id,
         :host => host,
@@ -191,7 +193,7 @@ class Router
         :requests => 0,
         :tags => tags
       }
-      add_tag_metrics(tags) if tags
+      add_tag_metrics(tags)
       droplets << droplet
       @droplets[url] = droplets
       VCAP::Component.varz[:urls] = @droplets.size

@@ -50,7 +50,7 @@ class RouterULSServer < Sinatra::Base
       # Get session cookie for droplet
       new_sticky = Router.get_session_cookie(droplet)
 
-      uls_req_tags = Base64.encode64(Marshal.dump(droplet[:tags])).strip if droplet[:tags]
+      uls_req_tags = Base64.encode64(Marshal.dump(droplet[:tags])).strip
       uls_response = {
         ULS_STICKY_SESSION => new_sticky,
         ULS_BACKEND_ADDR   => "#{droplet[:host]}:#{droplet[:port]}",
