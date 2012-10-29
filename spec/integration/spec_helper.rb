@@ -314,8 +314,11 @@ module Integration
       @host = host
     end
 
-    def reg_hash_for_app(app, tags = {})
+    def reg_hash_for_app(app, tags={})
+      session = VCAP.secure_uuid + VCAP.secure_uuid
+
       { :dea  => @dea_id,
+        :session => session,
         :host => @host,
         :port => app.port,
         :uris => app.uris,
@@ -323,7 +326,7 @@ module Integration
       }
     end
 
-    def register_app(app, tags = {})
+    def register_app(app, tags={})
       NATS.start(:uri => @nats_uri) do
         NATS.publish('router.register', reg_hash_for_app(app, tags).to_json) { NATS.stop }
       end

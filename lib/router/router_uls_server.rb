@@ -35,8 +35,8 @@ class RouterULSServer < Sinatra::Base
 
       # Pick a droplet based on original backend addr or pick a droplet randomly
       if sticky
-        _, host, port = Router.decrypt_session_cookie(sticky)
-        droplet = check_original_droplet(droplets, host, port)
+        droplet = droplets.find { |d| d[:session] == sticky }
+        Router.log.debug "request's __VCAP_ID__ is stale" unless droplet
       end
       droplet ||= droplets[rand*droplets.size]
       Router.log.debug "Routing #{droplet[:url]} to #{droplet[:host]}:#{droplet[:port]}"
@@ -85,21 +85,6 @@ class RouterULSServer < Sinatra::Base
   end
 
   protected
-
-  def check_original_droplet(droplets, host, port)
-    droplet = nil
-    if host and port
-      Router.log.debug "request has __VCAP_ID__ cookie for #{host}:#{port}"
-      # Check host?
-      droplets.each do |d|
-        if(d[:host] == host && d[:port] == port.to_i)
-          droplet = d; break
-        end
-      end
-      Router.log.debug "request's __VCAP_ID__ is stale" unless droplet
-    end
-    droplet
-  end
 
   def update_uls_stats(stats)
     stats.each do |stat|

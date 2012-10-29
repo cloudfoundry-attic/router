@@ -103,20 +103,6 @@ describe 'Router Functional Tests' do
     original_apps_set.should == received_apps_set
   end
 
-  it 'should generate the same token as router v1 did' do
-    Router.config({})
-    token = Router.generate_session_cookie(ROUTER_V1_DROPLET)
-    token.should == ROUTER_V1_SESSION
-  end
-
-  it 'should decrypt router v1 session' do
-    Router.config({})
-    url, host, port = Router.decrypt_session_cookie(ROUTER_V1_SESSION)
-    url.should  == ROUTER_V1_DROPLET[:url]
-    host.should == ROUTER_V1_DROPLET[:host]
-    port.should == ROUTER_V1_DROPLET[:port]
-  end
-
   it 'should properly exit when NATS fails to reconnect' do
     @nats_server.stop
     @nats_server.ready?.should be_false

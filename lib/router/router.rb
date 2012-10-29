@@ -4,7 +4,7 @@ class Router
   VERSION = 0.98
 
   class << self
-    attr_reader   :log, :notfound_redirect, :session_key
+    attr_reader   :log, :notfound_redirect
     attr_accessor :server, :local_server, :timestamp, :pid_file
     attr_accessor :inet, :port
 
@@ -32,7 +32,6 @@ class Router
         log.info "Registered 404 redirect at #{config['404_redirect']}"
       end
 
-      @session_key = config['session_key'] || '14fbc303b76bacd1e0a3ab641c11d11400341c5d'
       @expose_all_apps = config['status']['expose_all_apps'] if config['status']
 
       @enable_nonprod_apps = config['enable_nonprod_apps'] || false
@@ -49,7 +48,7 @@ class Router
         msg_hash = Yajl::Parser.parse(msg, :symbolize_keys => true)
         return unless uris = msg_hash[:uris]
         uris.each { |uri| register_droplet(uri, msg_hash[:host], msg_hash[:port],
-                                           msg_hash[:tags], msg_hash[:app]) }
+                                           msg_hash[:tags], msg_hash[:app], msg_hash[:private_instance_id]) }
       }
       NATS.subscribe('router.unregister') { |msg|
         msg_hash = Yajl::Parser.parse(msg, :symbolize_keys => true)
@@ -136,39 +135,15 @@ class Router
       to_drop.each { |droplet| unregister_droplet(droplet[:url], droplet[:host], droplet[:port]) }
     end
 
-    def generate_session_cookie(droplet)
-      token = [ droplet[:url], droplet[:host], droplet[:port] ]
-      c = OpenSSL::Cipher::Cipher.new('blowfish')
-      c.encrypt
-      c.key = @session_key
-      e = c.update(Marshal.dump(token))
-      e << c.final
-      session = [e].pack('m0').gsub("\n",'')
-      droplet[:session] = session
-      session
-    end
-
-    def decrypt_session_cookie(key)
-      e = key.unpack('m*')[0]
-      d = OpenSSL::Cipher::Cipher.new('blowfish')
-      d.decrypt
-      d.key = @session_key
-      p = d.update(e)
-      p << d.final
-      Marshal.load(p)
-    rescue
-      nil
-    end
-
     def get_session_cookie(droplet)
-      droplet[:session] || generate_session_cookie(droplet)
+      droplet[:session] || ""
     end
 
     def lookup_droplet(url)
       @droplets[url.downcase]
     end
 
-    def register_droplet(url, host, port, tags, app_id)
+    def register_droplet(url, host, port, tags, app_id, session=nil)
       return unless host && port
       url.downcase!
       tags ||= {}
@@ -185,6 +160,7 @@ class Router
       tags.delete_if { |key, value| key.nil? || value.nil? }
       droplet = {
         :app => app_id,
+        :session => session,
         :host => host,
         :port => port,
         :clients => Hash.new(0),

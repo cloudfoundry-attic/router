@@ -213,8 +213,6 @@ describe 'Router Integration Tests (require nginx running)' do
 
     # Verify cookie to backend that never exists
     Router.config({})
-    droplet = { :url => 'sticky.vcap.me', :host => '10.10.10.10', :port => 10 }
-    down_dea_cookie = "__VCAP_ID__=#{Router.generate_session_cookie(droplet)}"
     sticky_request = simple_sticky_request('sticky.vcap.me', '/sticky', bad_cookie)
 
     results = send_requests_to_apps(RouterServer.host, RouterServer.port,
