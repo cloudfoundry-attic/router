@@ -168,7 +168,7 @@ function vcap_handle_cookies(ngx)
   end
   if not sticky then return end
 
-  local vcap_cookie = VCAP_SESSION_ID.."="..ngx.var.sticky
+  local vcap_cookie = VCAP_SESSION_ID.."="..ngx.var.sticky.."; Path=/"
 
   ngx.log(ngx.DEBUG, "generate cookie:"..vcap_cookie.." for resp from:"..
           ngx.var.backend_addr)
