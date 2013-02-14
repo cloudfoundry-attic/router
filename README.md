@@ -2,9 +2,6 @@
 
 # router
 
-## File a bug
+## File a Bug
 
-To file a bug against Cloud Foundry Open Source and its components, sign
-up and use our [bug tracking system][atlassian].
-
-[atlassian]: http://cloudfoundry.atlassian.net
+Use the Github Issues feature in the appropriate repository to file a bug against Cloud Foundry Open Source and its components, 
