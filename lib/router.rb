@@ -147,8 +147,9 @@ EM.run do
 
   # Register ourselves with the system
   status_config = config['status'] || {}
+  local_ip = VCAP.local_ip(config['local_route'])
   VCAP::Component.register(:type => 'Router',
-                           :host => VCAP.local_ip(config['local_route']),
+                           :host => local_ip,
                            :index => config['index'],
                            :config => config,
                            :port => status_config['port'],
@@ -172,7 +173,7 @@ EM.run do
   VCAP::Component.varz[:tags] = {}
 
   @router_id = VCAP.secure_uuid
-  @hello_message = { :id => @router_id, :version => Router::VERSION }.to_json.freeze
+  @hello_message = { :id => @router_id, :version => Router::VERSION, :hosts => [local_ip] }.to_json.freeze
 
   # This will check on the state of the registered urls, do maintenance, etc..
   Router.setup_sweepers
